@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
 #if UNITY_ANDROID || UNITY_IOS
 using UnityEngine.XR.ARFoundation;
@@ -16,7 +16,11 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.ARFoundation
         /// </summary>
         /// <param name="transform">The transform.</param>
         /// <returns>An ARFoundation <see cref="ARReferencePoint"/>.</returns>
+#if UNITY_2019_3_OR_NEWER
+        public static ARAnchor CreateWorldAnchor(Transform transform)
+#else
         public static ARReferencePoint CreateWorldAnchor(Transform transform)
+#endif
         {
             return CreateReferencePoint(transform.position, transform.rotation);
         }
@@ -28,11 +32,19 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.ARFoundation
         /// <param name="rotation">The rotation.</param>
         /// <returns>An ARFoundation <see cref="ARReferencePoint"/>.</returns>
         /// <exception cref="InvalidOperationException">Unable to create an anchor.</exception>
+#if UNITY_2019_3_OR_NEWER
+        public static ARAnchor CreateReferencePoint(Vector3 position, Quaternion rotation)
+#else
         public static ARReferencePoint CreateReferencePoint(Vector3 position, Quaternion rotation)
+#endif
         {
             Pose anchorPose = new Pose(position, rotation);
+#if UNITY_2019_3_OR_NEWER
+            ARAnchor referencePoint = SpatialAnchorManager.arReferencePointManager.AddAnchor(anchorPose);
+#else
             ARReferencePoint referencePoint = SpatialAnchorManager.arReferencePointManager.AddReferencePoint(anchorPose);
-            
+#endif
+
             if (referencePoint == null)
             {
                 Debug.LogError("Unable to create an anchor.");
@@ -62,7 +74,11 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.ARFoundation
         /// </summary>
         /// <param name="referencePoint">The anchor.</param>
         /// <returns><see cref="Pose"/>.</returns>
+#if UNITY_2019_3_OR_NEWER
+        public static Pose GetPose(ARAnchor referencePoint)
+#else
         public static Pose GetPose(ARReferencePoint referencePoint)
+#endif
         {
             return new Pose(referencePoint.transform.position, referencePoint.transform.rotation);
         }
@@ -80,7 +96,11 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.ARFoundation
                 throw new InvalidOperationException("Invalid anchor pointer. Can't get the pose.");
             }
 
+#if UNITY_2019_3_OR_NEWER
+            ARAnchor referencePoint = SpatialAnchorManager.ReferencePointFromPointer(anchorPointer);
+#else
             ARReferencePoint referencePoint = SpatialAnchorManager.ReferencePointFromPointer(anchorPointer);
+#endif
 
             if (referencePoint == null)
             {

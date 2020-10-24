@@ -1,4 +1,4 @@
-#if UNITY_ANDROID || UNITY_IOS
+﻿#if UNITY_ANDROID || UNITY_IOS
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,7 +13,11 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.ARFoundation
         /// <summary>
         /// Gets the world anchor.
         /// </summary>
+#if UNITY_2019_3_OR_NEWER
+        public ARAnchor WorldAnchor { get; private set; }
+#else
         public ARReferencePoint WorldAnchor { get; private set; }
+#endif
 
         /// <summary>
         /// Gets the world anchor handle.
@@ -42,7 +46,11 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.ARFoundation
         {
             if (this.WorldAnchor != null)
             {
+#if UNITY_2019_3_OR_NEWER
+                SpatialAnchorManager.arReferencePointManager.RemoveAnchor(this.WorldAnchor);
+#else
                 SpatialAnchorManager.arReferencePointManager.RemoveReferencePoint(this.WorldAnchor);
+#endif
                 this.WorldAnchor = null;
             }
         }

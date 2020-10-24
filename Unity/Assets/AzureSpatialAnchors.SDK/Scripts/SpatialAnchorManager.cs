@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
 using System;
 using System.Collections;
@@ -59,9 +59,17 @@ namespace Microsoft.Azure.SpatialAnchors.Unity
         //ARFoundation specific variables
 #if UNITY_ANDROID || UNITY_IOS
         protected long lastFrameProcessedTimeStamp;
+#if UNITY_2019_3_OR_NEWER
+        protected static Dictionary<string, ARAnchor> pointerToReferencePoints = new Dictionary<string, ARAnchor>();
+#else
         protected static Dictionary<string, ARReferencePoint> pointerToReferencePoints = new Dictionary<string, ARReferencePoint>();
+#endif
         protected List<AnchorLocatedEventArgs> pendingEventArgs = new List<AnchorLocatedEventArgs>();
+#if UNITY_2019_3_OR_NEWER
+        internal static ARAnchorManager arReferencePointManager = null;
+#else
         internal static ARReferencePointManager arReferencePointManager = null;
+#endif
         protected ARCameraManager arCameraManager = null;
         protected ARSession arSession = null;
         protected Camera mainCamera;
@@ -151,7 +159,11 @@ namespace Microsoft.Azure.SpatialAnchors.Unity
         /// </summary>
         /// <param name="intPtr">An ARKit or ARcore anchor pointer</param>
         /// <returns>A reference point if found or null</returns>
+#if UNITY_2019_3_OR_NEWER
+        internal static ARAnchor ReferencePointFromPointer(IntPtr intPtr)
+#else
         internal static ARReferencePoint ReferencePointFromPointer(IntPtr intPtr)
+#endif
         {
             string key = intPtr.GetPlatformKey();
             if (pointerToReferencePoints.ContainsKey(key))
@@ -542,9 +554,9 @@ namespace Microsoft.Azure.SpatialAnchors.Unity
             // Raise the event
             SessionUpdated?.Invoke(this, args);
         }
-#endregion // Overridables
+        #endregion // Overridables
 
-#region Event Handlers
+        #region Event Handlers
         private async void Session_TokenRequired(object sender, TokenRequiredEventArgs args)
         {
             // Get the deferral
@@ -564,11 +576,20 @@ namespace Microsoft.Azure.SpatialAnchors.Unity
         /// to Unity ARFoundation Reference Points.
         /// </summary>
         /// <param name="obj">Event args with information about what has changed.</param>
+        /// 
+#if UNITY_2019_3_OR_NEWER
+        private void ARReferencePointManager_referencePointsChanged(ARAnchorsChangedEventArgs obj)
+#else
         private void ARReferencePointManager_referencePointsChanged(ARReferencePointsChangedEventArgs obj)
+#endif
         {
             lock (pointerToReferencePoints)
             {
+#if UNITY_2019_3_OR_NEWER
+                foreach (ARAnchor aRReferencePoint in obj.added)
+#else
                 foreach (ARReferencePoint aRReferencePoint in obj.added)
+#endif
                 {
                     string lookupkey = aRReferencePoint.nativePtr.GetPlatformPointer().GetPlatformKey();
                     if (!pointerToReferencePoints.ContainsKey(lookupkey))
@@ -577,7 +598,11 @@ namespace Microsoft.Azure.SpatialAnchors.Unity
                     }
                 }
 
+#if UNITY_2019_3_OR_NEWER
+                foreach (ARAnchor aRReferencePoint in obj.removed)
+#else
                 foreach (ARReferencePoint aRReferencePoint in obj.removed)
+#endif
                 {
                     string toremove = null;
                     foreach (var kvp in pointerToReferencePoints)
@@ -595,7 +620,11 @@ namespace Microsoft.Azure.SpatialAnchors.Unity
                     }
                 }
 
+#if UNITY_2019_3_OR_NEWER
+                foreach (ARAnchor aRReferencePoint in obj.updated)
+#else
                 foreach (ARReferencePoint aRReferencePoint in obj.updated)
+#endif
                 {
                     string lookupKey = aRReferencePoint.nativePtr.GetPlatformPointer().GetPlatformKey();
                     if (!pointerToReferencePoints.ContainsKey(lookupKey))
@@ -615,9 +644,9 @@ namespace Microsoft.Azure.SpatialAnchors.Unity
             ProcessLatestFrame();
         }
 #endif
-#endregion // Event Handlers
+        #endregion // Event Handlers
 
-#region Unity Overrides
+        #region Unity Overrides
         /// <summary>
         /// Awake is called when the script instance is being loaded.
         /// </summary>
@@ -644,14 +673,22 @@ namespace Microsoft.Azure.SpatialAnchors.Unity
             mainCamera = Camera.main;
             arCameraManager = FindObjectOfType<ARCameraManager>();
             arSession = FindObjectOfType<ARSession>();
+#if UNITY_2019_3_OR_NEWER
+            arReferencePointManager = FindObjectOfType<ARAnchorManager>();
+#else
             arReferencePointManager = FindObjectOfType<ARReferencePointManager>();
+#endif
 #endif
 
             // Only allow the manager to start if it is properly configured.
             await EnsureValidConfiguration(disable: true, exception: false);
 
 #if UNITY_ANDROID || UNITY_IOS
+#if UNITY_2019_3_OR_NEWER
+            arReferencePointManager.anchorsChanged += ARReferencePointManager_referencePointsChanged;
+#else
             arReferencePointManager.referencePointsChanged += ARReferencePointManager_referencePointsChanged;
+#endif
 #endif
         }
 
@@ -664,9 +701,9 @@ namespace Microsoft.Azure.SpatialAnchors.Unity
             ProcessPendingEventArgs();
 #endif
         }
-#endregion // Unity Overrides
+        #endregion // Unity Overrides
 
-#region Public Methods
+        #region Public Methods
         /// <summary>
         /// Creates a new session if one does not exist.
         /// </summary>
@@ -992,9 +1029,9 @@ namespace Microsoft.Azure.SpatialAnchors.Unity
             // Notify
             OnSessionStopped();
         }
-#endregion // Public Methods
+        #endregion // Public Methods
 
-#region Public Properties
+        #region Public Properties
         /// <summary>
         /// Gets or sets the method used for authentication.
         /// The default is <see cref="AuthenticationMode.ApiKey">ApiKey</see>.
@@ -1107,9 +1144,9 @@ namespace Microsoft.Azure.SpatialAnchors.Unity
         /// Gets or sets the Tenant ID to use when authenticating via Azure Active Directory.
         /// </summary>
         public string TenantId { get { return tenantId; } set { tenantId = value; } }
-#endregion // Public Properties
+        #endregion // Public Properties
 
-#region Public Events
+        #region Public Events
         /// <summary>
         /// Raised when the <see cref="Session"/> <see cref="CloudSpatialAnchorSession.AnchorLocated">AnchorLocated</see> event is fired.
         /// </summary>
@@ -1210,6 +1247,6 @@ namespace Microsoft.Azure.SpatialAnchors.Unity
         /// the currently active session.
         /// </remarks>
         public event OnLogDebugDelegate LogDebug;
-#endregion // Public Events
+        #endregion // Public Events
     }
 }
